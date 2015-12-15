@@ -4,28 +4,43 @@ var file = "chat.sqlite3";
 var exists = fs.existsSync(file);
 var sqlite3 = require('sqlite3').verbose();
 var db = new sqlite3.Database(file);
-//timestamp
 var timestamp = require('console-timestamp');
-var now = new Date();
+var md5 = require('MD5');
 
-//init server
-db.serialize(function () {
-    if (!exists) {
-        try{
-            db.run("CREATE TABLE olab_chat_history (email_agent TEXT, email_client TEXT, email_from TEXT, message TEXT, date TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL, name TEXT)");
-            db.run("CREATE TABLE olab_chat_users (Email_agent TEXT, User_name TEXT, User_password TEXT, Date TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL, PRIMARY KEY(Email_agent ASC))");
-            console.log("NodeJS-DB","Error al crear la base de datos");
-        }catch(err){
-            console.log("NodeJS-DB","Error al crear la base de datos");
-            console.log(err)
-            console.log("======================================");
+
+//init server DB
+function init_db_and_add_user(callback){
+    db.serialize(function () {
+        if (!exists) {
+            try{
+                db.run("CREATE TABLE olab_chat_history (email_agent TEXT, email_client TEXT, email_from TEXT, message TEXT, date TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL, name TEXT)");
+                db.run("CREATE TABLE olab_chat_users (Email_agent TEXT, User_name TEXT, User_password TEXT, Date TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL, PRIMARY KEY(Email_agent ASC))");
+                // insert user
+                stmt = db.prepare("INSERT INTO olab_chat_users VALUES (?,?,?,?)");
+                stmt.bind("eduardobc.88@gmail.com", "g4a", md5('g4a2015'), timestamp('DD-MM-YYYY hh:mm:ss'));
+                stmt.get(function (error, rows) {
+                    if (error) {
+                        console.log("init_db_and_add_user","ERROR - sqlite_add_agent_user_chat()");
+                        sqlite_chat_print_all("olab_chat_users");
+                    } else {
+                        console.log("init_db_and_add_user","NEW USER AGENT ADDED");
+                        sqlite_chat_print_all("olab_chat_users");
+                    }
+                });
+                stmt.finalize();
+                //console.log("NodeJS-DB","DB Sqlite3 created");
+            } catch (err){
+                console.log("init_db_and_add_user","Error DB Sqlite3 no created");
+                //console.log(err)
+                //console.log("======================================");
+            }
+        } else {
+            console.log("init_db_and_add_user","Error No se pudo crear el archivo: "+file);
         }
-    }
-});
-db.close();
-
-
-
+    });
+    db.close();
+}
+init_db_and_add_user();
 //######################################################################  start test
 //get all agents emails => SELECT DISTINCT(email_agent) FROM olab_chat_history;
 //get all clients emails => SELECT DISTINCT(email_client) FROM olab_chat_history;
@@ -38,18 +53,18 @@ db.close();
     message: "para el cliente",
     name: "agent_test"
 }, function (data) {
-    console.log("test saved");
+    //console.log("test saved");
 });*/
 /*
 sqlite_chat_print_all("olab_chat_history");
 sqlite_get_all_agents(function(data){
-    console.log("AGENTES");
-    console.log(data);
+    //console.log("AGENTES");
+    //console.log(data);
 });
 
 sqlite_admin_get_clients('agent_test@olab.mx',function(data){
-    console.log("CLIENTES");
-    console.log(data);
+    //console.log("CLIENTES");
+    //console.log(data);
 });*/
 
 
@@ -61,7 +76,7 @@ function sqlite_get_all_agents(callback){
         stmt = "SELECT email_agent,name FROM olab_chat_history WHERE email_agent == email_from GROUP BY email_agent;";
         db.all(stmt, function(err, rows) {
             if (err) {
-                console.log("ERROR - sqlite_get_all_agents()");
+                console.log("sqlite_get_all_agents","ERROR - sqlite_get_all_agents()");
             }
             callback({
                 rows: rows
@@ -79,7 +94,7 @@ function sqlite_admin_get_clients(email_agent,callback){
         stmt = "select * from olab_chat_history where email_agent = '"+email_agent+"' and email_client <> '"+email_agent+"' and email_from <> '"+email_agent+"' GROUP BY email_client;"
         db.all(stmt, function(err, rows) {
             if (err) {
-                console.log("ERROR - aqlite_admin_get_clients()");
+                console.log("sqlite_admin_get_clients","ERROR - aqlite_admin_get_clients()");
             }
             callback({
                 rows: rows
@@ -100,7 +115,7 @@ function sqlite_admin_conversation(data,callback){
         stmt = "SELECT * FROM olab_chat_history WHERE email_agent='"+email_agent+"' AND email_client = '"+email_client+"' ORDER BY date DESC;";
         db.all(stmt, function(err, rows) {
             if (err) {
-                console.log("ERROR - sqlite_admin_conversation()");
+                console.log("sqlite_admin_conversation","ERROR - sqlite_admin_conversation()");
             }
             //console.log(rows);
             callback({
@@ -114,20 +129,18 @@ function sqlite_admin_conversation(data,callback){
 //######################################################################  end test
 
 
-
-var md5 = require('MD5');
 function sqlite_add_agent_user_chat() {
-    console.log("ADD NEW AGENT USER");
+    //console.log("ADD NEW AGENT USER");
     db = new sqlite3.Database(file);
     db.serialize(function () {
         stmt = db.prepare("INSERT INTO olab_chat_users VALUES (?,?,?,?)");
         stmt.bind("ebc@g4all.mx", "g4a", md5('g4a2015'), timestamp('DD-MM-YYYY hh:mm:ss'));
         stmt.get(function (error, rows) {
             if (error) {
-                console.log("ERROR - sqlite_add_agent_user_chat()");
-                sqlite_chat_print_all("olab_chat_users");
+                console.log("sqlite_add_agent_user_chat","ERROR");
+                //sqlite_chat_print_all("olab_chat_users");
             } else {
-                console.log("RESULT NEW USER AGENT ADDED");
+                //console.log("RESULT NEW USER AGENT ADDED");
                 sqlite_chat_print_all("olab_chat_users");
             }
         });
@@ -141,33 +154,32 @@ function sqlite_add_agent_user_chat() {
 //olab validate user on DB
 function sqlite_validate_user_data(data, callback) {
     var db;
-    console.log("==== sqlite_validate_user_data ====");
+    //console.log("==== sqlite_validate_user_data ====");
     db = new sqlite3.Database(file);
     db.serialize(function() {
       var stmt;
       stmt = "SELECT * FROM olab_chat_users WHERE User_name = '" + data.user_name + "';";
       db.all(stmt, function(err, rows) {
-        /*
+
         if (err != null) {
-          console.log("ERROR - sqlite_validate_user_data()");
-        }
-        */
-        /*
-        console.log("sqlite_validate_user_data","RESULT");
-        console.log( rows[0].User_password+" == "+md5(data.user_pass) );
-        console.log("sqlite_validate_user_data","RESULT");
-        */
-        if (rows.length === 0) {
-            console.log("USER NO");
+            console.log("sqlite_validate_user_data","ERROR - User Auth Error DB");
             callback({
                 status: "no"
             });
-        } else if ( rows[0].User_password == md5(data.user_pass) ) {
-            console.log("USER OK");
-            callback({
-                status: "ok"
-            });
+        } else {
+            if (rows.length === 0) {
+                //console.log("USER NO");
+                callback({
+                    status: "no"
+                });
+            } else if ( rows[0].User_password == md5(data.user_pass) ) {
+                //console.log("USER OK");
+                callback({
+                    status: "ok"
+                });
+            }
         }
+
       });
     });
     db.close();
@@ -180,7 +192,7 @@ function sqlite_chat_print_all(table) {
     db.serialize(function () {
         db.all("SELECT * FROM " + table + ";", function (err, rows) {
             if (err)
-                console.log("ERROR - sqlite_chat_print_all()");
+                console.log("sqlite_chat_print_all","ERROR - sqlite_chat_print_all()");
             else
                 console.log(rows);
         });
@@ -190,13 +202,13 @@ function sqlite_chat_print_all(table) {
 
 function sqlite_chat_add_new_message(object_vals, callback) {
     db = new sqlite3.Database(file);
-    console.log("NEW MESSAGE TO SAVE");
+    //console.log("NEW MESSAGE TO SAVE");
     db.serialize(function () {
         stmt = db.prepare("INSERT INTO olab_chat_history VALUES (?,?,?,?,?,?)");
         stmt.bind(object_vals.email_agent, object_vals.email_client, object_vals.email_from, object_vals.message, timestamp('DD-MM-YYYY hh:mm:ss'), object_vals.name);
         stmt.get(function (error, rows) {
             if (error) {
-                console.log("ERROR - sqlite_chat_add_new_message()");
+                console.log("sqlite_chat_add_new_message","ERROR - sqlite_chat_add_new_message()");
             } else {
                 //console.log("RESULT INSERT NEW MESSAGE");
                 //sqlite_chat_print_all("olab_chat_history");
@@ -219,20 +231,22 @@ function sqlite_chat_add_new_message(object_vals, callback) {
 /*var CryptoJS = require("crypto-js");
 crypto_compare(CryptoJS.PBKDF2("lalo", "olab-key").words, CryptoJS.PBKDF2("lalo", "olab-key").words);
 function crypto_compare(word_a, word_b){
-    console.log("#################### CRYPTO #####################");
+    //console.log("#################### CRYPTO #####################");
     var equals = true;
     word_a.forEach(function(val,key) {
-        console.log(val+" == "+word_b[key]);
+        //console.log(val+" == "+word_b[key]);
         if( val != word_b[key] )
             equals = false;
     });
-    console.log("EQUALS="+equals);
-    console.log("#################### CRYPTO #####################");
+    //console.log("EQUALS="+equals);
+    //console.log("#################### CRYPTO #####################");
 }
 */
 
 
 /*####################### END CRYPTO ########################*/
+
+
 
 
 /*####################### START CONFIG VARS ########################*/
@@ -295,17 +309,17 @@ var chat_auth = function (req, res, next) {
     } else {
         //login user
         //test width post data
-        console.log("################# START AUTH ##################");
+        //console.log("################# START AUTH ##################");
         if( typeof user === 'undefined' ){
             if( typeof user_name === 'undefined' || typeof user_pass === 'undefined' || user_name == "" || user_pass == "" ){
                 req.session = null;
                 return res.render('page_agent_session',{server_ip_address: "http://" + server_ip_address + ":" + server_port});
             } else {
-                console.log("using post data");
+                //console.log("using post data");
                 obj_data = {user_name:user_name,user_pass:user_pass};
                 sqlite_validate_user_data(obj_data,function(data){
                     if( data.status == "ok" ){
-                        console.log("RESPONSE");
+                        //console.log("RESPONSE");
                         req.session = {
                             user: {
                                 user_name: user_name,
@@ -336,7 +350,7 @@ var chat_auth = function (req, res, next) {
                 });
             }
         } else {
-            console.log("using session vars");
+            //console.log("using session vars");
             obj_data = {user_name:user.user_name,user_pass:user.user_pass};
             sqlite_validate_user_data(obj_data,function(data){
                 if( data.status == "ok" ){
@@ -347,7 +361,7 @@ var chat_auth = function (req, res, next) {
                             user_admin: user.user_admin
                         }
                     };
-                    console.log("RESPONSE");
+                    //console.log("RESPONSE");
                     if( typeof user.user_admin !== 'undefined' ){
                         sqlite_get_all_agents(function(agents){
                             var agents_local = agents.rows;
@@ -357,7 +371,7 @@ var chat_auth = function (req, res, next) {
                                 agents_local.forEach(function(val,key) {
                                     agents_data[key] = {email:agents_local[key].email_agent,name:agents_local[key].name};
                                 });
-                            console.log(agents_data);
+                            //console.log(agents_data);
                             res.render("page_admin", {
                                 server_ip_address: "http://" + server_ip_address + ":" + server_port,
                                 agents:agents_data,
@@ -404,14 +418,14 @@ router.post('/', chat_auth, function (req, res) {
 });
 // chat client without auth
 router.get('/olab_chat_client', function (req, res) {
-    console.log("CHAT CLIENT");
+    //console.log("CHAT CLIENT");
     res.render("page_client", {
         server_ip_address: "http://" + server_ip_address + ":" + server_port
     });
 });
 // chat admin all agents
 router.get('/admin', chat_auth, function (req, res) {
-    console.log("PAGE ADMIN REQUEST");
+    //console.log("PAGE ADMIN REQUEST");
     res.render("page_admin", {
         server_ip_address: "http://" + server_ip_address + ":" + server_port,
         data: req
@@ -419,7 +433,7 @@ router.get('/admin', chat_auth, function (req, res) {
 });
 
 router.get("/g4a_chat_get_base", function(req, res) {
-    console.log("BASE REQUEST");
+    //console.log("BASE REQUEST");
     res.render("page_base", {
         server_ip_address: "http://" + server_ip_address + ":" + server_port
     });
@@ -498,7 +512,7 @@ io.sockets.on('connection', function (socket) {
         //console.log( "ENVIA="+data.name );
         obj = get_ids_fron_email_given("_", data.ids);
         if (obj.client_or_agent == 'client') {
-            console.log("agent->client");
+            //console.log("agent->client");
             //{ ak: 0, ok: 'client_id_0', client_or_agent: 'client' }
             try{
                 client_email = (agents_ids_assoc_clients[obj.ak])[obj.ok].client_email;//validar undefined
@@ -509,14 +523,14 @@ io.sockets.on('connection', function (socket) {
                     message: data.message,
                     name: data.name
                 }, function (data) {
-                    console.log("saved");
+                    //console.log("saved");
                 });
             } catch(err){
-                console.log("ERROR ENVIANDO MENSAJE DE AGENTE->CLIENTE");
-                console.log(err);
+                console.log("io.sockets.on","ERROR ENVIANDO MENSAJE DE AGENTE->CLIENTE");
+                //console.log(err);
             }
         } else {
-            console.log("client->agent");
+            //console.log("client->agent");
             //{ ak: 0, ok: '', client_or_agent: 'agent' }
             try{
                 agent_email = (agents_ids_assoc_clients[obj.ak]).agent_email;//validar undefined
@@ -527,14 +541,14 @@ io.sockets.on('connection', function (socket) {
                     message: data.message,
                     name: data.name
                 }, function (data) {
-                    console.log("saved");
+                    //console.log("saved");
                 });
             } catch(err){
-                console.log("ERROR ENVIANDO MENSAJE DE CLIENTE->AGENTE");
-                console.log(err);
+                console.log("io.sockets.on","ERROR ENVIANDO MENSAJE DE CLIENTE->AGENTE");
+                //console.log(err);
             }
         }
-        console.log("SEND - MESSAGE END");
+        //console.log("SEND - MESSAGE END");
     });
     //VALID IF IS AGENT OR CLIENT - ONLY ADMINS SHOULD SENT THIS TYPE OF MESSAGE
     socket.on('type_user', function (data) {
@@ -558,31 +572,31 @@ io.sockets.on('connection', function (socket) {
     //LISTENERS
     //SART - SOCKET - HANDLER
     socket.on('connecting', function () {
-        console.log('connecting:');
+        //console.log('connecting:');
     });
     socket.on('connect', function () {
         //this_socket_id = socket.socket.sessionid;
-        console.log('connect:');
+        //console.log('connect:');
     });
     socket.on('connect_failed', function () {
-        console.log("connect_failed");
+        //console.log("connect_failed");
     });
     socket.on('reconnect_failed', function () {
-        console.log("Client reconnect_failed");
+        //console.log("Client reconnect_failed");
     });
     socket.on('reconnecting', function () {
-        console.log("reconnecting");
+        //console.log("reconnecting");
     });
     socket.on('reconnect', function () {
-        console.log("reconnect");
+        //console.log("reconnect");
     });
     socket.on('disconnect', function () {
         id_client_disconnect = socket.id;
-        console.log("START disconnect SE DESCONECTO=" + id_client_disconnect);
+        //console.log("START disconnect SE DESCONECTO=" + id_client_disconnect);
         //search by this id and send message to other client
         obj_client = get_ids_fron_email_given("_", id_client_disconnect);
-        console.log("disconnect RESULTADO");
-        console.log(obj_client);
+        //console.log("disconnect RESULTADO");
+        //console.log(obj_client);
         //si es agente manda mensaje a todos sus clientes para que se desconecten
         //si es cliente se le manda mensaje al agente para que cierre la ventana
         if (obj_client != false && typeof obj_client !== 'undefined') {
@@ -603,8 +617,8 @@ io.sockets.on('connection', function (socket) {
                         type: "right"
                     });
                 } catch(err){
-                    console.log("ERROR - CLIENTE - DESCONECTADO:");
-                    console.log(err);
+                    console.log("io.sockets.on","ERROR - CLIENTE - DESCONECTADO:");
+                    //console.log(err);
                 }
 
             } else {
@@ -622,15 +636,15 @@ io.sockets.on('connection', function (socket) {
                     }
                 }
 
-                console.log("#######REMOVE AGENT#########");
-                console.log(" END AGENTE SE FUE!");
+                //console.log("#######REMOVE AGENT#########");
+                //console.log(" END AGENTE SE FUE!");
                 //console.log(agents_ids_assoc_clients);
                 //remove Agent from array
                 delete agents_ids_assoc_clients[obj_client.ak];
                 total_agents = total_agents - 1;
 
                 //console.log(agents_ids_assoc_clients);
-                console.log("#######REMOVE AGENT#########");
+                //console.log("#######REMOVE AGENT#########");
 
             }
         }
@@ -644,7 +658,7 @@ function chat_send_message_for_disc_to_client(this_client_id) {
     if (obj_client != false && typeof obj_client !== 'undefined') {
         agent_id = agents_ids_assoc_clients[obj_client.ak].agend_id;
         who_is = obj_client.client_or_agent;
-        console.log(obj_client);
+        //console.log(obj_client);
         if (who_is == "client") {
             client_id = (agents_ids_assoc_clients[obj_client.ak])[obj_client.ok].client_id;
             (agents_ids_assoc_clients[obj_client.ak])[obj_client.ok].client_id = "";
@@ -665,8 +679,8 @@ function chat_add_agent(id, data) {
         if (typeof agents_ids_assoc_clients[k] !== 'undefined') {
 
             if (agents_ids_assoc_clients[k].agent_email == data.email) {
-                console.log(agents_ids_assoc_clients);
-                console.log("Este agente ya existe");
+                //console.log(agents_ids_assoc_clients);
+                //console.log("Este agente ya existe");
                 //send message to the new agent telling that the current email has been used actually
                 io.sockets.socket(id).emit('message', {
                     "status": "Este correo ya----------AGENTE UNDEFINED esta en uso."
@@ -697,14 +711,14 @@ function chat_add_agent(id, data) {
 
 //ASSOC CLIENT TO AGENT MAX 2 BY AGENT
 function chat_add_client(id, data) {
-    /*console.log("#######chat_add_client asociados#########");
-    console.log(agents_ids_assoc_clients);
-    console.log("#######chat_add_client asociados#########");
+    /*//console.log("#######chat_add_client asociados#########");
+    //console.log(agents_ids_assoc_clients);
+    //console.log("#######chat_add_client asociados#########");
     //shuffle Arrayagents_ids_assoc_clients
     agents_ids_assoc_clients = shuffle(agents_ids_assoc_clients);
-    console.log("#######chat_add_client res#########");
-    console.log(agents_ids_assoc_clients);
-    console.log("#######chat_add_client res#########");*/
+    //console.log("#######chat_add_client res#########");
+    //console.log(agents_ids_assoc_clients);
+    //console.log("#######chat_add_client res#########");*/
     //check first if exists
     /* solucion facil: encontrar el cliente duplicado, eliminarlo y volver a asignarle un nuevo agente */
     /* solucion dificil: encontrar el cliente duplicado y enviarle el id del agente que tenia asociado anteriormente, pero antes verificar si esta online */
@@ -754,7 +768,7 @@ function chat_add_client(id, data) {
                 date: current_date,
             }); //To Agent
         } else {
-            console.log("NO HAY AGENTES DISPONIBLES");
+            //console.log("NO HAY AGENTES DISPONIBLES");
             var current_date = timestamp('DD-MM-YYYY hh:mm:ss');
             io.sockets.socket(id).emit('message', {
                 "agent_assoc_id": "-",
@@ -763,7 +777,7 @@ function chat_add_client(id, data) {
             }); //To Client
         }
     } else {
-        console.log("NO HAY AGENTES DISPONIBLES");
+        //console.log("NO HAY AGENTES DISPONIBLES");
         var current_date = timestamp('DD-MM-YYYY hh:mm:ss');
         io.sockets.socket(id).emit('message', {
             "agent_assoc_id": "-",
@@ -819,7 +833,7 @@ function get_ids_fron_email_given(email, id) {
                 if (assoc_client)
                     break;
             } else {
-                console.log("------------------------AGENTE UNDEFINED " + id + "------------------------");
+                //console.log("------------------------AGENTE UNDEFINED " + id + "------------------------");
             }
         }
         if (assoc_client) {
@@ -844,7 +858,7 @@ function chat_disconnect_client(email_client) {
     obj_client = get_ids_fron_email_given(email_client, "_");
     if (obj_client != false && typeof obj_client !== 'undefined') {
         //GET IDS
-        console.log((agents_ids_assoc_clients[obj_client.ak]));
+        //console.log((agents_ids_assoc_clients[obj_client.ak]));
         client_id = (agents_ids_assoc_clients[obj_client.ak])[obj_client.ok].client_id;
         agent_id = agents_ids_assoc_clients[obj_client.ak].agend_id;
         //FREE SPACE ON AGENT OBJECT
@@ -860,4 +874,4 @@ function chat_disconnect_client(email_client) {
         }); //To Agent
     }
 }
-console.log("IP ADDRESS:" + server_ip_address + "   PORT:" + server_port + "   INIT: " + timestamp('DD-MM-YYYY hh:mm:ss'));
+//console.log("IP ADDRESS:" + server_ip_address + "   PORT:" + server_port + "   INIT: " + timestamp('DD-MM-YYYY hh:mm:ss'));
