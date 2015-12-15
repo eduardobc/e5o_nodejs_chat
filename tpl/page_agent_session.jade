@@ -1,0 +1,33 @@
+doctype
+html
+    head
+        title= "Real time web chat Agent OLAB"
+        link(rel='stylesheet', href='#{server_ip_address}/olab_session.css')
+        script(src='http://code.jquery.com/jquery-2.1.1.min.js')
+        link(rel='stylesheet', href='http://fonts.googleapis.com/css?family=Lato:100,300,400,700,900,100italic,300italic,400italic,700italic,900italic')
+        meta(charset='utf-8')
+    body
+        div.session-header
+            img(src="#{server_ip_address}/logo.png")
+        div.session-content
+            h3 Autentificación
+            label.message
+            form(action="/" method='post')
+                label Usuario:
+                br
+                input(type="text" name="user_name")
+                br
+                label Password:
+                br
+                input(type="password" name="user_pass")
+                br
+                label Administrador:
+                br
+                input(type="checkbox" name="user_admin")
+                br
+                hr.shadow
+                br
+                button(type="submit") Iniciar
+                div.effect3
+        div.session-footer
+            © 2013 Todos los Derechos Reservados G4A.

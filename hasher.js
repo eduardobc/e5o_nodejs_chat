@@ -1,0 +1,1 @@
+(function(){var e,r,t;e=require("crypto"),r=require("pbkdf2-sha256"),t="undefined"!=typeof exports&&null!==exports?exports:this,t.validatePassword=function(e,t){var i,n,s;return n=t.split("$"),i=n[1],s=n[2],r(e,new Buffer(s),i,32).toString("base64")===n[3]}}).call(this);

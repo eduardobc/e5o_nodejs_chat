@@ -1,0 +1,8 @@
+html
+        script(src='#{server_ip_address}/chat_client.js' id="g4a-chat-base-load" data-server-ip="#{server_ip_address}")
+        script(src='#{server_ip_address}/socket.io/socket.io.js')
+        .chat-content
+        textarea( class="chat-message" placeholder="Tu mensaje:")
+        br
+        input(type='button', value='Cerrar' class='chat-button chat-close-conn')
+        input(type='button', value='Enviar' class="chat-button chat-sent")

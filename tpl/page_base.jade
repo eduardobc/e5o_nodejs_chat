@@ -1,0 +1,29 @@
+//script(src='https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js')
+script(src='#{server_ip_address}/g4a_chat_page_base.js' id="g4a-chat-base-load" data-server-ip="#{server_ip_address}")
+link(rel='stylesheet', href='https://fonts.googleapis.com/css?family=Roboto:400,500,700,300')
+link(rel='stylesheet', href='#{server_ip_address}/g4a_chat_page_base.css')
+.chat-container
+    .chat-button-container(style='z-index: 99; position: fixed; bottom: 0px;')
+        .button-open-window-chat
+            .oval
+            p Ayuda en l&iacute;nea
+        .chat-controls-ajax
+            form#olab-chat-form(modal='false', submit_handler='false')
+                .chat-step-a
+                    label Nombre:
+                    label.error(for='olab-chat-form-name')
+                    br
+                    input#olab-chat-form-name.chat-name(name='olab-chat-form-name', placeholder='Tu nombre:', type='text')
+                    br
+                    br
+                    label Correo:
+                    label.error(for='olab-chat-form-email')
+                    br
+                    input#olab-chat-form-email.chat-email(name='olab-chat-form-email', placeholder='Tu correo:', type='text')
+                    br
+                    br
+                    button.chat-button.chat-ok Iniciar
+                .chat-step-b
+        .olab-message-without-agents
+          p G4A
+          p Horario de atenci&oacute;n de 7:00am a 8:00pm.
